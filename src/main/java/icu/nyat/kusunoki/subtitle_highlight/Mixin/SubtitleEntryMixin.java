@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(SubtitlesHud.SubtitleEntry.class)
+@Mixin(targets = "net/minecraft/client/gui/hud/SubtitlesHud$SubtitleEntry")
 public class SubtitleEntryMixin {
     @Shadow
     @Final

@@ -18,6 +18,8 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Iterator;
 
 //import static net.minecraft.client.gui.hud.SubtitlesHud.SubtitleEntry;
@@ -32,17 +34,47 @@ public class SubtitlesHudMixin {
 
 
 
-    @Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Ljava/util/Iterator;next()Ljava/lang/Object;", ordinal = 0))
-    private Object FetchSubtitleEntries(Iterator Instance) {
-        SubtitlesHud.SubtitleEntry subtitleEntry = (SubtitlesHud.SubtitleEntry) Instance.next();
-        DurationRatio = (Util.getMeasuringTimeMs() - subtitleEntry.getTime()) / (double) (ConfigManager.Options.MaximumDuration);
-        return subtitleEntry;
-    }
+    /*@Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Ljava/util/Iterator;next()Ljava/lang/Object;", ordinal = 0))
+    private Object FetchSubtitleEntries(Iterator instance) throws Exception {
 
-    @Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/SubtitlesHud$SubtitleEntry;getTime()J"))
-    private long SubtitleTimeRedirect(SubtitlesHud.SubtitleEntry Instance) {
-        return (long) (Instance.getTime() - 3000 * this.client.options.getNotificationDisplayTime().getValue() + ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue());
-    }
+        Class<?> subtitleEntryClass = Class.forName("net.minecraft.client.gui.hud.SubtitlesHud$SoundEntry");
+
+        // 获取SubtitleEntry中的方法
+        Method getTimeMethod = subtitleEntryClass.getDeclaredMethod("time");
+        getTimeMethod.setAccessible(true);
+
+        // 迭代并访问SubtitleEntry实例
+        while (instance.hasNext()) {
+            Object subtitleEntry = instance.next();
+            long time = (long) getTimeMethod.invoke(subtitleEntry);
+
+            // 计算DurationRatio
+            DurationRatio = (Util.getMeasuringTimeMs() - time) / (double) (ConfigManager.Options.MaximumDuration);
+
+            // 返回字幕条目（可以根据你的逻辑修改）
+            return subtitleEntry;
+        }
+        throw new Exception();
+    }*/
+
+    /*@Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/SubtitlesHud$SoundEntry;time()J"))
+    private long SubtitleTimeRedirect(SubtitlesHud.SoundEntry instance) throws Exception {
+        Class<?> subtitleEntryClass = Class.forName("net.minecraft.client.gui.hud.SubtitlesHud$SubtitleEntry");
+
+        // 获取 SubtitleEntry 类中的 getTime 方法
+        Method getTimeMethod = subtitleEntryClass.getDeclaredMethod("time");
+        getTimeMethod.setAccessible(true);  // 设置方法可访问
+
+        // 调用 getTime 方法来获取时间
+        long time = (long) getTimeMethod.invoke(instance);
+
+        // 根据你的逻辑计算返回的时间值
+        long adjustedTime = (long) (time - 3000 * this.client.options.getNotificationDisplayTime().getValue()
+                        + ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue());
+
+        return adjustedTime;
+        //return (long) (instance.time() - 3000 * this.client.options.getNotificationDisplayTime().getValue() + ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue());
+    }*/
 
     @ModifyVariable(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At("STORE"), ordinal = 7)
     private int DirectionDisplayColorChanger(int OriginalValue) {
