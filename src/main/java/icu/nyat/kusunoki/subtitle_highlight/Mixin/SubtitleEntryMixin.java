@@ -26,7 +26,7 @@ public class SubtitleEntryMixin {
     private Text text;
 
     @Inject(at = @At("RETURN"), method = "getText()Lnet/minecraft/text/Text;", cancellable = true)
-    private void 字幕着色(CallbackInfoReturnable<Text> ReturnableInfo) {
+    private void SubtitleColor(CallbackInfoReturnable<Text> ReturnableInfo) {
         MutableText SubtitleText = ((MutableText) this.text).formatted(Formatting.RESET);
         if (SubtitleText.getContent() instanceof TranslatableTextContent) {
             for (Settings.Custom element : ConfigManager.Options.CustomizedList) {
