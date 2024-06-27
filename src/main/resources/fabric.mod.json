@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "subtitle_highlight",
+  "version": "${version}",
+
+  "name": "Subtitle Highlight",
+  "description": "Give your subtitles a highlight",
+  "authors": ["Shiroame_Kusu"],
+  "contact": {
+    "repo": "https://github.com/Shiroiame-Kusu/Subtitle-Highlight"
+  },
+
+  "license": "GPL-3.0",
+  "icon": "assets/subtitle_highlight/icon.png",
+
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "icu.nyat.kusunoki.subtitle_highlight.SubtitleHighlight"
+    ],
+    "modmenu": [
+      "icu.nyat.kusunoki.subtitle_highlight.Configuration.ModMenu.ConfigurationAPI"
+    ]
+  },
+
+      "mixins": [
+        "subtitle_highlight.mixins.json"
+      ],
+
+  "depends": {
+    "cloth-config": "*",
+    "fabricloader": ">=${loader_version}",
+        "fabric": "*",
+    "minecraft": ">=1.20.5"
+  }
+}
