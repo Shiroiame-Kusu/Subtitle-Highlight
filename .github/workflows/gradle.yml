@@ -25,7 +25,6 @@ jobs:
       with:
         java-version: '21'
         distribution: 'temurin'
-
     # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
     # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
     - name: Setup Gradle
@@ -34,7 +33,7 @@ jobs:
         gradle-version: "8.7"
 
     - name: Build with Gradle Wrapper
-      run: ./gradlew jar
+      run: chmod +x gradlew && ./gradlew jar
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
