@@ -5,6 +5,7 @@ import icu.nyat.kusunoki.subtitle_highlight.Configuration.Settings;
 import icu.nyat.kusunoki.subtitle_highlight.Utils.SplitKeyArrays;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.SubtitlesHud;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -16,14 +17,22 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
-@Mixin(targets = "net/minecraft/client/gui/hud/SubtitlesHud$SubtitleEntry")
+@Mixin(SubtitlesHud.SubtitleEntry.class)
 public class SubtitleEntryMixin {
     @Shadow
     @Final
     private Text text;
+
+    /*@Inject(method = "removeExpired",at = @At("HEAD"))
+    private void SubtitleExpireInjector(double expiry, CallbackInfo info){
+        expiry = ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue();
+    }*/
 
     @Inject(at = @At("RETURN"), method = "getText()Lnet/minecraft/text/Text;", cancellable = true)
     private void SubtitleColor(CallbackInfoReturnable<Text> ReturnableInfo) {

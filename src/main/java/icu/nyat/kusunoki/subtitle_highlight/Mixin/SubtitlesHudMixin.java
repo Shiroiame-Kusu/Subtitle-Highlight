@@ -5,21 +5,20 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.hud.SubtitlesHud;
+import net.minecraft.client.sound.SoundListenerTransform;
+import net.minecraft.client.sound.SoundManager;
 import net.minecraft.text.Text;
 import net.minecraft.text.TextColor;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Iterator;
 
 //import static net.minecraft.client.gui.hud.SubtitlesHud.SubtitleEntry;
@@ -27,54 +26,48 @@ import java.util.Iterator;
 @Environment(EnvType.CLIENT)
 @Mixin(SubtitlesHud.class)
 public class SubtitlesHudMixin {
-    private static double DurationRatio;
+    @Unique
+    private static double DurationRatio = 0.0;
     @Shadow
     @Final
     private MinecraftClient client;
 
-
-
-    /*@Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Ljava/util/Iterator;next()Ljava/lang/Object;", ordinal = 0))
-    private Object FetchSubtitleEntries(Iterator instance) throws Exception {
-
-        Class<?> subtitleEntryClass = Class.forName("net.minecraft.client.gui.hud.SubtitlesHud$SoundEntry");
-
-        // 获取SubtitleEntry中的方法
-        Method getTimeMethod = subtitleEntryClass.getDeclaredMethod("time");
-        getTimeMethod.setAccessible(true);
-
-        // 迭代并访问SubtitleEntry实例
-        while (instance.hasNext()) {
-            Object subtitleEntry = instance.next();
-            long time = (long) getTimeMethod.invoke(subtitleEntry);
-
-            // 计算DurationRatio
-            DurationRatio = (Util.getMeasuringTimeMs() - time) / (double) (ConfigManager.Options.MaximumDuration);
-
-            // 返回字幕条目（可以根据你的逻辑修改）
-            return subtitleEntry;
+    @Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Ljava/util/Iterator;next()Ljava/lang/Object;", ordinal = 0))
+    private Object FetchSubtitleEntries(Iterator Instance) {
+        SubtitlesHud.SubtitleEntry subtitleEntry;
+        if(Instance.hasNext()){
+            subtitleEntry = (SubtitlesHud.SubtitleEntry) Instance.next();
+        }else {
+            return null;
         }
-        throw new Exception();
-    }*/
+            try{
+                SoundManager soundManager = this.client.getSoundManager();
+                SoundListenerTransform soundListenerTransform = soundManager.getListenerTransform();
+                Vec3d vec3d = soundListenerTransform.position();
+                SubtitlesHud.SoundEntry soundEntry = subtitleEntry.getNearestSound(vec3d);
+                double a = 0;
+                if(soundEntry != null){
+                    a = soundEntry.time();
+                    if(a != 0){
+                        double OriginalDurationRatio = (Util.getMeasuringTimeMs() -
+                                (a + (ConfigManager.Options.MaximumDuration - 3000) * this.client.options.getNotificationDisplayTime().getValue())
+                        ) / (double) (ConfigManager.Options.MaximumDuration);
+                        if(OriginalDurationRatio <= 1){
+                            DurationRatio = OriginalDurationRatio;
+                        }else {
+                            //I thought something is wrong with the god damn DurationRatio.
+                            //But I dont fucking know is this actually a bug or not, so just let it go.
+                            DurationRatio = 0.1;
+                            //DurationRatio = OriginalDurationRatio;
+                        }
+                    }
+                }
+                //System.out.println("Out:" + DurationRatio + " " + Util.getMeasuringTimeMs() + " " + a + " " + (Util.getMeasuringTimeMs() - a));
+            }catch (Exception ignored){
 
-    /*@Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/SubtitlesHud$SoundEntry;time()J"))
-    private long SubtitleTimeRedirect(SubtitlesHud.SoundEntry instance) throws Exception {
-        Class<?> subtitleEntryClass = Class.forName("net.minecraft.client.gui.hud.SubtitlesHud$SubtitleEntry");
-
-        // 获取 SubtitleEntry 类中的 getTime 方法
-        Method getTimeMethod = subtitleEntryClass.getDeclaredMethod("time");
-        getTimeMethod.setAccessible(true);  // 设置方法可访问
-
-        // 调用 getTime 方法来获取时间
-        long time = (long) getTimeMethod.invoke(instance);
-
-        // 根据你的逻辑计算返回的时间值
-        long adjustedTime = (long) (time - 3000 * this.client.options.getNotificationDisplayTime().getValue()
-                        + ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue());
-
-        return adjustedTime;
-        //return (long) (instance.time() - 3000 * this.client.options.getNotificationDisplayTime().getValue() + ConfigManager.Options.MaximumDuration * this.client.options.getNotificationDisplayTime().getValue());
-    }*/
+            }
+        return subtitleEntry;
+    }
 
     @ModifyVariable(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At("STORE"), ordinal = 7)
     private int DirectionDisplayColorChanger(int OriginalValue) {
@@ -83,6 +76,7 @@ public class SubtitlesHudMixin {
 
     @ModifyArgs(method = "render(Lnet/minecraft/client/gui/DrawContext;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTextWithShadow(Lnet/minecraft/client/font/TextRenderer;Lnet/minecraft/text/Text;III)I"))
     private void SubtitleDisplayColorChanger(Args Parameters) {
+        //System.out.println("Receive:" + DurationRatio);
         Text text = Parameters.get(1);
         Parameters.set(1, Text.literal(text.getString()).setStyle(text.getStyle().withColor((TextColor) null)));
         int Red, Green, Blue;
@@ -96,6 +90,7 @@ public class SubtitlesHudMixin {
         int RedLeft = MathHelper.floor(MathHelper.clampedLerp(Red * ConfigManager.Options.StartRatio, Red * ConfigManager.Options.StopRatio, DurationRatio));
         int GreenLeft = MathHelper.floor(MathHelper.clampedLerp(Green * ConfigManager.Options.StartRatio, Green * ConfigManager.Options.StopRatio, DurationRatio));
         int BlueLeft = MathHelper.floor(MathHelper.clampedLerp(Blue * ConfigManager.Options.StartRatio, Blue * ConfigManager.Options.StopRatio, DurationRatio));
+
         Parameters.set(4, (RedLeft << 16 | GreenLeft << 8 | BlueLeft) - 16777216);
     }
 
